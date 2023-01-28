@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>
+        栋数管理
+    </title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="css/main.css" media="all">
+    <script type="text/javascript" src="lib/loading/okLoading.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <!--导入ElementUI样式列表，css样式一般都在页面头部-->
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+<div class="x-nav">
+            <span class="layui-breadcrumb">
+              <a><cite>首页</cite></a>
+              <a><cite>房产管理</cite></a>
+              <a><cite>栋数管理</cite></a>
+            </span>
+    <a class="layui-btn layui-btn-small" style="line-height:1.6em;margin-top:3px;float:right"  href="javascript:location.replace(location.href);" title="刷新"><i class="layui-icon" style="line-height:30px">ဂ</i></a>
+</div>
+<div class="x-body" id="app">
+    <div>
+        <span class="demonstration">时间范围</span>
+        <el-date-picker
+                @change="dateChange"
+                v-model="selectDate"
+                type="daterange"
+                range-separator="-"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                :picker-options="pickerOptions">
+        </el-date-picker>
+        <span class="demonstration">搜索关键字</span>
+        <el-input v-model="searchMap.name" style="width: 20%" placeholder="请输入小区名称"></el-input>
+        <el-button type="primary" plain @click="searchMap.pageNum=1;search()">搜索</el-button>
+    </div>
+    <br>
+    <xblock>
+        <button class="layui-btn layui-btn-danger" @click="delAll()"><i class="layui-icon">&#xe640;</i>批量删除</button>
+        <button class="layui-btn" @click="admin_add('添加','buildingadd.html','1000','600')"><i class="layui-icon">&#xe608;</i>添加</button>
+        <!-- <span class="x-right" style="line-height:40px">共有数据：<span class="layui-badge">2</span> 条</span> -->
+    </xblock>
+    <table class="layui-table">
+        <thead>
+        <tr>
+            <th>
+                <input type="checkbox" id="allChecked" :checked="checkedIDs.length===buildingList.length" @click="allChecked">
+            </th>
+            <th>
+                ID
+            </th>
+
+            <th>
+                所属小区名称
+            </th>
+            <th>
+                所属小区ID
+            </th>
+            <th>
+                栋数名称
+            </th>
+            <th>
+                总户数
+            </th>
+            <th>
+                描述
+            <th>
+                创建时间
+            </th>
+            <th>
+                操作
+            </th>
+        </tr>
+        </thead>
+        <tbody id="x-img">
+        <tr v-for="(building,index) in buildingList">
+            <td>
+                <input type="checkbox" :id="'id'+building.id" :value="building.id" v-model="checkedIDs">
+            </td>
+            <td>{{building.id}}</td>
+            <td>{{building.communityName}}</td>
+            <td>{{building.communityId}}</td>
+            <td>{{building.name}}</td>
+            <td>{{building.totalHouseholds}}</td>
+            <td>{{building.description}}</td>
+            <td>{{dateFormat(building.createTime)}}</td>
+            <td class="td-manage">
+                <a title="编辑" href="javascript:;" @click="building_edit('编辑','buildingadd.html',building.id,'1000','600')"
+                   class="ml-5" style="text-decoration:none">
+                    <i class="layui-icon">&#xe642;</i>
+                </a>
+                <a title="删除" href="javascript:;" @click="del_one(building.id)"
+                   style="text-decoration:none">
+                    <i class="layui-icon">&#xe640;</i>
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <el-pagination
+            background
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :page-size="searchMap.pageSize"
+            layout="prev, pager, next,sizes"
+            :page-sizes="[2,10,20]"
+            style="text-align: right;"
+            :total="total">
+    </el-pagination>
+</div>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+<!--js脚本一般是放在页面尾部-->
+<!--Vue js脚本-->
+<script src="/js/vue.js" charset="utf-8"></script>
+<!--引入ElementUI组件库-->
+<script src="/js/index.js" charset="utf-8"></script>
+<!--引入Axios js脚本-->
+<script src="/js/axios.js" charset="utf-8"></script>
+<!--引入时间插件包Momentjs-->
+<script src="/js/moment.min.js" charset="utf-8"></script>
+<script>
+    var app = new Vue({
+        el:"#app",//声明当前Vue在页面的作用域
+        data:{
+            checkedIDs:[],
+            buildingList:[],
+            total:10,
+            searchMap:{"startTime":"","endTime":"","name":"","pageNum":1,"pageSize":2},
+            selectDate:['',''],
+            pickerOptions: {
+                shortcuts: [{
+                    text: '最近一周',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近一个月',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近三个月',
+                    onClick(picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }]
+            }
+        },
+        methods:{
+            //分页条件查询小区列表
+            search(){
+                axios.post("/building/search",this.searchMap).then((res)=>{
+                    app.buildingList = res.data.data;
+                    app.total = res.data.total;
+                });
+            },
+            //单个删除
+            del_one(id){
+                this.$confirm('请问您是否要删除该小区信息?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //把选中的ID封装到集合中
+                    this.checkedIDs.push(id);
+                    //执行删除操作
+                    axios.post("/building/del",this.checkedIDs).then((res)=>{
+                        if(res.data.flag){
+                            this.$message({
+                                type: 'success',
+                                message: '删除成功!'
+                            });
+                        }
+                        //删除成功，把选中的ID列表置为空
+                        this.checkedIDs = [];
+                        //把页面置为1，重新获取列表数据
+                        this.searchMap.pageNum = 1;
+                        this.search();
+                    });
+
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            //多选删除
+            delAll(){
+                this.$confirm('请问您是否要删除选中小区信息?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //执行删除操作
+                    axios.post("/building/del",this.checkedIDs).then((res)=>{
+                        if(res.data.flag){
+                            this.$message({
+                                type: 'success',
+                                message: '删除成功!'
+                            });
+                        }
+                        //删除成功，把选中的ID列表置为空
+                        this.checkedIDs = [];
+                        //把页面置为1，重新获取列表数据
+                        this.searchMap.pageNum = 1;
+                        this.search();
+                    });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            urlImg(url){
+                return "http://localhost/estate"+url;
+            },
+            //全选、全不选方法
+            allChecked: function () {
+                if (this.checkedIDs.length === this.buildingList.length) {
+                    // 全不选
+                    this.checkedIDs = [];
+
+                } else {
+                    this.checkedIDs = [];
+                    // 全选
+                    this.buildingList.forEach( (item) =>{
+                        this.checkedIDs.push(item.id); // 与checkbox的value统一
+                    })
+                }
+            },
+            //handleSizeChange每页数量发生变化后触发的方法
+            handleSizeChange(pageSize){
+                this.searchMap.pageSize = pageSize;
+                this.search();
+            },
+            //handleCurrentChange页码变化触发方法
+            handleCurrentChange(pageNum){
+                this.searchMap.pageNum = pageNum;
+                this.search();
+            },
+            //时间区间发生改变，searcHMap中时间区间条件也要变化
+            dateChange(){
+                //没有选择时间区间或者清理时间条件，当前时间区间为空字符串
+                if(this.selectDate == null || this.selectDate.length == 0){
+                    this.searchMap.startTime = '';
+                    this.searchMap.endTime = '';
+                }else{
+                    //当时间区间不为空，往searchMap中添加条件
+                    if(this.selectDate[0] != null && this.selectDate[0] != ''){
+                        this.searchMap.startTime = this.dateFormat(this.selectDate[0]);
+
+                    }
+                    if(this.selectDate[1] != null && this.selectDate[1] != ''){
+                        this.searchMap.endTime = this.dateFormat(this.selectDate[1]);
+                    }
+                }
+
+            },
+            //日期格式化方法
+            //date 要进行格式的日期 ；format 格式化的样式
+            dateFormat(date,format){
+                //默认格式化字符串"YYYY-MM-DD HH:mm:ss"
+                if(format == null || format == ''){
+                    format = "YYYY-MM-DD HH:mm:ss";
+                }
+                return moment(date).format(format);
+            },
+            /*添加*/
+            admin_add(title,url,w,h){
+                this.x_admin_show(title,url,w,h);
+            },
+            //编辑
+            building_edit (title,url,id,w,h) {
+                url = url+"?id="+id;
+                this.x_admin_show(title,url,w,h);
+            },
+            /*弹出层*/
+            /*
+                参数解释：
+                title	标题
+                url		请求的url
+                id		需要操作的数据id
+                w		弹出层宽度（缺省调默认值）
+                h		弹出层高度（缺省调默认值）
+            */
+            x_admin_show(title,url,width,height){
+                if (title == null || title == '') {
+                    title=false;
+                };
+                if (url == null || url == '') {
+                    url="404.html";
+                };
+                if (width == null || width == '') {
+                    width=800;
+                };
+                if (height == null || height == '') {
+                    height=($(window).height() - 50);
+                };
+
+                layer.open({
+                    type: 2,
+                    area: [width+'px', height +'px'],
+                    fix: false, //不固定
+                    maxmin: true,
+                    shadeClose: true,
+                    shade:0.4,
+                    title: title,
+                    content: url,
+                    cancel: function(index, layero){
+                        //使用右上角x关闭弹窗层，回调方法，重新加载页面数据，让修改或者新增的数据立马显示在页面上
+                        app.search();
+                    }
+                });
+            },
+            /*关闭弹出框口*/
+            x_admin_close(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            }
+        },
+        created:function () {//Vue生命周期方法，加载页面时会执行该方法
+            layui.use(['laydate','element','laypage','layer'], function(){
+                $ = layui.jquery;//jquery
+                layer = layui.layer;//弹出层
+                okLoading.close($);
+                layer.ready(function(){ //为了layer.ext.js加载完毕再执行
+                    layer.photos({
+                        photos: '#x-img'
+                    });
+                });
+            });
+            //初始页面获取小区列表信息
+            this.search();
+        }
+    });
+
+</script>
+
+</body>
+</html>

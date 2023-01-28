@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>
+        小区管理
+    </title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="/css/main.css" media="all">
+    <script type="text/javascript" src="/lib/loading/okLoading.js"></script>
+    <!-- 引入ElementUI样式 -->
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+<div id="app">
+<div class="x-nav">
+            <span class="layui-breadcrumb">
+              <a><cite>首页</cite></a>
+              <a><cite>小区管理</cite></a>
+              <a><cite>{{title}}</cite></a>
+            </span>
+    <a class="layui-btn layui-btn-small" style="line-height:1.6em;margin-top:3px;float:right"  href="javascript:location.replace(location.href);" title="刷新"><i class="layui-icon" style="line-height:30px">ဂ</i></a>
+</div>
+<div class="x-body">
+    <el-form :model="community" :rules="rules" ref="communityFormRef" label-width="120px" class="demo-ruleForm">
+        <el-form-item label="小区名称" prop="name">
+            <el-input v-model="community.name"></el-input>
+        </el-form-item>
+        <el-form-item label="小区编号" prop="code">
+            <el-input v-model="community.code"></el-input>
+        </el-form-item>
+        <el-form-item label="坐落地址" prop="address">
+            <el-input v-model="community.address"></el-input>
+        </el-form-item>
+        <el-form-item label="占地面积" prop="area">
+            <el-input v-model="community.area"></el-input>
+        </el-form-item>
+        <el-form-item label="开发商名称" prop="developer">
+            <el-input v-model="community.developer"></el-input>
+        </el-form-item>
+        <el-form-item label="物业公司名称" prop="estateCompany">
+            <el-input v-model="community.estateCompany"></el-input>
+        </el-form-item>
+        <el-form-item label="绿化率" prop="greeningRate">
+            <el-input v-model="community.greeningRate"></el-input>
+        </el-form-item>
+        <el-form-item label="总栋数" prop="totalBuildings">
+            <el-input v-model="community.totalBuildings"></el-input>
+        </el-form-item>
+        <el-form-item label="总户数" prop="totalHouseholds">
+            <el-input v-model="community.totalHouseholds"></el-input>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+            <el-radio-group v-model="community.status">
+                <el-radio label="0">启用</el-radio>
+                <el-radio label="1">停用</el-radio>
+            </el-radio-group>
+        </el-form-item>
+        <el-form-item label="小区缩略图" prop="thumbnail">
+            <el-upload
+                    class="upload-demo"
+                    action="/estate/fileupload"
+                    :on-preview="handlePreview"
+                    :on-remove="handleRemove"
+                    :on-success="handleSuccess"
+                    :file-list="fileList"
+                    list-type="picture">
+                <el-button size="small" type="primary">点击上传</el-button>
+                <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过10M</div>
+            </el-upload>
+        </el-form-item>
+        <el-form-item>
+            <el-button type="primary" @click="save()" style="text-align: center">保存</el-button>
+            <el-button @click="clearAll()" style="text-align: center">重置</el-button>
+        </el-form-item>
+    </el-form>
+</div>
+</div>
+<script src="lib/layui/layui.js" charset="utf-8"></script>
+<script src="js/x-layui.js" charset="utf-8"></script>
+<!--导入Vue依赖包-->
+<script src="/js/vue.js" charset="utf-8"></script>
+<!-- 引入Element组件库 -->
+<script src="/js/index.js"></script>
+<!--导入Axios依赖包-->
+<script src="/js/axios.js" charset="utf-8"></script>
+<script type="text/javascript">
+    var app = new Vue({
+        el:"#app",
+        data:{
+            title:"添加小区",
+            community:{thumbnail:"",id:""},
+            fileList:[],
+            rules: {
+                name: [
+                    { required: true, message: '请输入小区名称', trigger: 'blur' },
+                    { max: 50, message: '长度小于50个字符', trigger: 'blur' }
+                ],
+                code: [
+                    { required: true, message: '请输入小区名称', trigger: 'blur' },
+                    { min: 11,max: 20, message: '长度必须大于11、小于20个字符', trigger: 'blur' }
+                ],
+                address: [
+                    { required: true, message: '请输入小区地址', trigger: 'blur' }
+                ],
+                area: [
+                    { required: true, message: '请输入占地面积', trigger: 'blur' }
+                ],
+                developer: [
+                    { required: true, message: '请输入开发商名称', trigger: 'blur' }
+                ],
+                estateCompany: [
+                    { required: true, message: '请输入物业公司名称', trigger: 'blur' }
+                ],
+                greeningRate: [
+                    { required: true, message: '请输入绿化面积', trigger: 'blur' },
+                ],
+                totalBuildings:[
+                    { required: true, message: '请输入楼栋总数', trigger: 'blur' }
+                ],
+                totalHouseholds:[
+                    { required: true, message: '请输入住户总数', trigger: 'blur' }
+                ],
+                status:[
+                    { required: true, message: '请选择小区状态', trigger: 'change' }
+                ],
+                thumbnail:[
+                    { required: true, message: '请上传小区缩略图', trigger: 'change' }
+                ]
+            }
+        },
+        methods:{
+            findById(){
+                axios.get("/community/findById?id="+this.community.id).then((res)=>{
+                    this.community = res.data.data;
+                    this.fileList.push({url:"http://localhost/estate"+this.community.thumbnail});
+                });
+            },
+            handleSuccess(response, file, fileList){
+                this.community.thumbnail=response.data;
+            },
+            handleRemove() {
+                axios.get("/estate/delfile?fileName="+this.community.thumbnail).then((res)=>{
+                    app.community.thumbnail="";
+                    if(res.data.flag){
+                        app.fileList=[];
+                        this.$message({
+                            message: '图片删除成功',
+                            type: 'success'
+                        });
+                    }
+                });
+            },
+            handlePreview(file) {
+                console.log(file);
+            },
+            handleExceed(files, fileList) {
+                this.$message.warning(`当前限制选择 1 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);
+            },
+            //文件删除提示
+            beforeRemove(file, fileList) {
+                return this.$confirm(`确定移除 ${ file.name }？`);
+            },
+            //表达重置
+            clearAll() {
+                this.$refs.communityFormRef.resetFields();
+                if(this.fileList.length>0) {
+                    this.handleRemove();
+                }
+            },
+            save(){
+                var method = "";
+                if(this.community.id != null){
+                    method = "update"
+                }else{
+                    method = "add"
+                }
+                axios.post("/community/"+method,this.community).then((res)=>{
+                    if(res.data.flag){
+                        this.$message({
+                            message: res.data.message,
+                            type: 'success'
+                        });
+                    }
+                });
+            },
+            imgUrl(){
+                return "http://localhost/estate"+app.community.thumbnail;
+            },
+            getQueryString(name){
+                let reg = `(^|&)${name}=([^&]*)(&|$)`
+                let r = window.location.search.substr(1).match(reg);
+                if (r != null) return unescape(r[2]); return null;
+            }
+        },
+        created:function(){
+            layui.use(['element','layer','form'], function(){
+                $ = layui.jquery;//jquery
+                lement = layui.element();//面包导航
+                layer = layui.layer;//弹出层
+                form = layui.form();
+                okLoading.close($);
+            });
+            //获取父页面传递参数，小区ID
+            this.community.id = this.getQueryString("id");
+            //根据小区ID获取小区对象，进行数据回显
+            if(this.community.id != null && this.community.id != ''){
+                this.title="修改小区";
+                this.findById();
+            }
+        }
+    });
+</script>
+</body>
+</html>

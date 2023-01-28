@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>
+        添加权限
+    </title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="css/main.css" media="all">
+</head>
+
+<body>
+<div class="x-body">
+    <form action="" method="post" class="layui-form layui-form-pane">
+        <input type="hidden" name="id" value=""/>
+        <div class="layui-form-item">
+            <label for="name" class="layui-form-label">
+                <span class="x-red">*</span>上级权限
+            </label>
+            <div class="layui-input-inline">
+                <select name="pid">
+                    <option value="0">顶级权限</option>
+                    <option value="1" >系统设置</option>
+                    <option value="2" >|———基础设置</option>
+                    <option value="3" >|——————基础设置操作</option>
+                    <option value="9" >|———友情链接</option>
+                    <option value="10" >|——————友情链接列表</option>
+                    <option value="11" >|——————友情链接添加修改</option>
+                    <option value="12" >|——————友情链接删除</option>
+                    <option value="13" >|——————友情链接审核</option>
+                    <option value="14" >|——————友情链接状态操作</option>
+                    <option value="4" >管理员管理</option>
+                    <option value="5" >|———管理员列表</option>
+                    <option value="6" >|——————管理员添加修改</option>
+                    <option value="7" >|——————管理员删除</option>
+                    <option value="8" >|——————管理员状态操作</option>
+
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label for="name" class="layui-form-label">
+                <span class="x-red">*</span>权限名称
+            </label>
+            <div class="layui-input-inline">
+                <input type="text" id="title" name="title" required="" lay-verify="required"
+                       autocomplete="off" class="layui-input" value="">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label for="name" class="layui-form-label">
+                <span class="x-red">*</span>权限控/方
+            </label>
+            <div class="layui-input-inline">
+                <input type="text" id="name" name="name" required="" lay-verify="required"
+                       autocomplete="off" class="layui-input" value="">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" value="1" title="启用" checked="checked">
+                <div class="layui-unselect layui-form-radio layui-form-radioed"><i class="layui-anim layui-icon layui-anim-scaleSpring"></i>
+                    <div>启用</div>
+                </div>
+                <input type="radio" name="status" value="0" title="禁用" checked="checked">
+                <div class="layui-unselect layui-form-radio"><i class="layui-anim layui-icon"></i>
+                    <div>禁用</div>
+                </div>
+
+
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label for="desc" class="layui-form-label">
+                描述
+            </label>
+            <div class="layui-input-block">
+                <textarea placeholder="请输入内容" id="condition" name="condition" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <button class="layui-btn" lay-submit="" lay-filter="add">保存</button>
+        </div>
+    </form>
+</div>
+<script src="lib/layui/layui.js" charset="utf-8">
+</script>
+<script src="js/x-layui.js" charset="utf-8">
+</script>
+<script>
+    layui.use(['form','layer'], function(){
+        $ = layui.jquery;
+        var form = layui.form()
+            ,layer = layui.layer;
+
+        //监听提交
+        form.on('submit(add)', function(data){
+            var data = data.field;
+            $.ajax({
+                type:"post",
+                url:"xxx",
+                data:data,
+                dataType:"json",
+                success:function (data) {
+                    if(data.status==1){
+                        layer.msg(data.info,{icon:1,time:1000});
+                        setTimeout(function(){
+                            window.parent.location.reload();
+                            var index = parent.layer.getFrameIndex(window.name);
+                            parent.layer.close(index);
+                        },1000);
+                        return false;
+                    }else{
+                        layer.msg(data.info,{icon:5,time:2000});return false;
+                    }
+                }
+            });
+            return false;
+        });
+
+
+    });
+</script>
+
+</body>
+
+</html>
